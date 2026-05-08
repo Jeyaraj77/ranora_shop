@@ -1,1 +1,1 @@
-# Ranora -> The jwell for new beginning
+# Ranora -> The jewel for new beginnings
