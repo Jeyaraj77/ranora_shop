@@ -1,0 +1,13 @@
+{
+  "name": "ranorah-jewellery-store",
+  "version": "1.0.0",
+  "description": "Ranorah jewellery storefront with cart, checkout and WhatsApp ordering",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.22.1",
+    "sqlite3": "^5.1.7"
+  }
+}

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ranorah Orders</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .orders-wrap {
+        max-width: 1200px;
+        margin: 20px auto;
+        background: #fff;
+        border: 1px solid #eadfd4;
+        border-radius: 12px;
+        padding: 16px;
+      }
+      .table-wrap {
+        overflow-x: auto;
+        border: 1px solid #eadfd4;
+        border-radius: 10px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 980px;
+      }
+      th, td {
+        border-bottom: 1px solid #f1e7de;
+        padding: 10px;
+        text-align: left;
+        vertical-align: top;
+        font-size: 13px;
+      }
+      th {
+        background: #faf6f2;
+        color: #5b534f;
+      }
+      .items-cell {
+        margin: 0;
+        padding-left: 16px;
+      }
+      .print-btn {
+        white-space: nowrap;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="orders-wrap">
+      <h1>Order Management</h1>
+      <div id="ordersLoginPanel">
+        <p class="muted">Enter password to view order history.</p>
+        <label>Password <input id="ordersPassword" type="password" placeholder="Enter orders password" /></label>
+        <button id="ordersLoginBtn" class="btn btn-primary">Login</button>
+      </div>
+      <div id="ordersPanel" class="hidden">
+        <p class="muted">Only placed orders are tracked here as history.</p>
+        <div id="ordersList"></div>
+      </div>
+      <p><a href="index.html">Back to Store</a> | <a href="admin.html">Admin</a></p>
+    </div>
+    <script>
+      const ORDERS_PASSWORD = "ranorah@123";
+      const currency = new Intl.NumberFormat("en-IN");
+      const API_BASE = window.API_BASE_URL ? String(window.API_BASE_URL).replace(/\/$/, "") : "";
+      const apiUrl = (path) => `${API_BASE}${path}`;
+      const ordersList = document.getElementById("ordersList");
+      const ordersLoginPanel = document.getElementById("ordersLoginPanel");
+      const ordersPanel = document.getElementById("ordersPanel");
+      const ordersPassword = document.getElementById("ordersPassword");
+      const ordersLoginBtn = document.getElementById("ordersLoginBtn");
+      let currentOrders = [];
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function printOrderByIndex(orderIndex) {
+        const order = currentOrders[orderIndex];
+        if (!order) return;
+
+        const rows = (order.items || [])
+          .map((item) => {
+            const qty = Number(item.qty || 0);
+            const price = Number(item.price || 0);
+            return `
+              <tr>
+                <td>${escapeHtml(item.name || "-")}</td>
+                <td>${qty}</td>
+                <td>₹${currency.format(price)}</td>
+                <td>₹${currency.format(qty * price)}</td>
+              </tr>`;
+          })
+          .join("");
+
+        const printable = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="UTF-8" />
+              <title>Order ${escapeHtml(order.id || "")}</title>
+              <style>
+                body { font-family: Arial, sans-serif; margin: 24px; color: #222; }
+                h1 { margin: 0 0 14px; font-size: 24px; }
+                .meta { margin-bottom: 14px; line-height: 1.5; }
+                table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+                th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                th { background: #f2f2f2; }
+                .total { margin-top: 12px; font-size: 18px; font-weight: 700; }
+              </style>
+            </head>
+            <body>
+              <h1>Ranorah Order Details</h1>
+              <div class="meta">
+                <div><strong>Order ID:</strong> ${escapeHtml(order.id || "-")}</div>
+                <div><strong>Date:</strong> ${order.createdAt ? escapeHtml(new Date(order.createdAt).toLocaleString()) : "-"}</div>
+                <div><strong>Customer:</strong> ${escapeHtml(order.customer?.name || "-")} (${escapeHtml(order.customer?.phone || "-")})</div>
+                <div><strong>Email:</strong> ${escapeHtml(order.customer?.email || "-")}</div>
+                <div><strong>Address:</strong> ${escapeHtml([order.address?.line1, order.address?.line2, `${order.address?.city || ""} - ${order.address?.pincode || ""}`].filter(Boolean).join(", ") || "-")}</div>
+                <div><strong>Payment Ref:</strong> ${escapeHtml(order.paymentRef || "Not provided")}</div>
+              </div>
+              <table>
+                <thead>
+                  <tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr>
+                </thead>
+                <tbody>${rows || "<tr><td colspan='4'>No items</td></tr>"}</tbody>
+              </table>
+              <div class="total">Total: ₹${currency.format(Number(order.total || 0))}</div>
+            </body>
+          </html>`;
+
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) {
+          alert("Unable to open print window. Please allow popups for this site.");
+          return;
+        }
+        printWindow.document.open();
+        printWindow.document.write(printable);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+      }
+
+      window.printOrderByIndex = printOrderByIndex;
+
+      function render(orders) {
+        if (!orders.length) {
+          ordersList.innerHTML = "<p class='muted'>No orders yet.</p>";
+          return;
+        }
+        currentOrders = orders.slice().reverse();
+        const rows = currentOrders
+          .map((o, index) => {
+            const itemLines = (o.items || [])
+              .map((i) => `<li>${i.name || "-"} x ${Number(i.qty || 0)} (₹${currency.format(Number(i.price || 0) * Number(i.qty || 0))})</li>`)
+              .join("");
+            const address = [o.address?.line1, o.address?.line2, `${o.address?.city || ""} - ${o.address?.pincode || ""}`]
+              .filter(Boolean)
+              .join(", ");
+            return `
+              <tr>
+                <td>${o.id || "-"}</td>
+                <td>${o.createdAt ? new Date(o.createdAt).toLocaleString() : "-"}</td>
+                <td>${o.customer?.name || "-"}<br /><span class="muted">${o.customer?.phone || "-"}</span></td>
+                <td>${address || "-"}</td>
+                <td><ul class="items-cell">${itemLines || "<li>-</li>"}</ul></td>
+                <td>₹${currency.format(Number(o.total || 0))}</td>
+                <td>${o.paymentRef || "Not provided"}</td>
+                <td><button class="btn print-btn" onclick="printOrderByIndex(${index})">Print</button></td>
+              </tr>`;
+          })
+          .join("");
+
+        ordersList.innerHTML = `
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Date & Time</th>
+                  <th>Customer</th>
+                  <th>Address</th>
+                  <th>Items</th>
+                  <th>Total</th>
+                  <th>Payment Ref</th>
+                  <th>Print</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+      }
+
+      async function loadOrders() {
+        try {
+          const res = await fetch(apiUrl("/api/orders"));
+          if (!res.ok) throw new Error("Failed to fetch orders");
+          const orders = await res.json();
+          render(orders);
+        } catch (error) {
+          ordersList.innerHTML = `<p class="muted">${error.message}</p>`;
+        }
+      }
+
+      ordersLoginBtn.addEventListener("click", async () => {
+        if (ordersPassword.value !== ORDERS_PASSWORD) {
+          alert("Invalid password.");
+          return;
+        }
+        ordersLoginPanel.classList.add("hidden");
+        ordersPanel.classList.remove("hidden");
+        await loadOrders();
+      });
+
+      ordersPassword.addEventListener("keydown", async (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        ordersLoginBtn.click();
+      });
+    </script>
+  </body>
+</html>

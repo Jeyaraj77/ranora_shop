@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#f7efe8"/>
+  <circle cx="280" cy="220" r="56" fill="none" stroke="#c49a6c" stroke-width="12"/>
+  <circle cx="520" cy="220" r="56" fill="none" stroke="#c49a6c" stroke-width="12"/>
+  <circle cx="280" cy="300" r="22" fill="#b88655"/>
+  <circle cx="520" cy="300" r="22" fill="#b88655"/>
+  <text x="400" y="60" text-anchor="middle" font-family="Arial" font-size="34" fill="#6f4e37">Ranorah Earrings</text>
+</svg>

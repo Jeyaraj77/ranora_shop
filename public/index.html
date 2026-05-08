@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ranorah Jewellery</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="#">
+        <span class="brand-title">RANORA</span>
+        <span class="brand-sub">JEWELRY FOR NEW BEGINNINGS</span>
+      </a>
+      <nav class="main-nav">
+        <a href="#home">HOME</a>
+        <a href="#collections">COLLECTIONS</a>
+      </nav>
+      <button id="openCartBtn" class="icon-btn" aria-label="Open cart">Cart (<span id="cartCount">0</span>)</button>
+    </div>
+  </header>
+
+  <section class="hero" id="home">
+    <div class="container hero-content">
+      <p class="eyebrow">JEWELRY FOR NEW BEGINNINGS</p>
+      <h1>Mark the <span>moments</span><br />that matter</h1>
+      <p>Ranora pieces are made for life's quiet milestones - the new chapter, the celebration, the promise kept.</p>
+      <div class="hero-actions">
+        <a href="#collections" class="btn btn-primary">Shop Collections</a>
+        <a href="#story" class="btn">Our Story</a>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section class="story-section" id="story">
+      <div class="container centered">
+        <p class="eyebrow">OUR STORY</p>
+        <h2>Every piece holds a beginning</h2>
+        <p class="muted max-text">Ranora was born from a simple belief - that jewelry should be more than ornament. It should be memory. A ring that marks a promise. A necklace gifted the day you took the leap. A bracelet worn through the fear and the joy of starting over.</p>
+      </div>
+    </section>
+
+    <section class="value-strip">
+      <div class="container value-grid">
+        <article class="value-card">
+          <h3>Handcrafted Quality</h3>
+          <p class="muted">Each piece is designed and finished with lasting detail and care.</p>
+        </article>
+        <article class="value-card">
+          <h3>Thoughtful Packaging</h3>
+          <p class="muted">Ready-to-gift presentation made for your special moments.</p>
+        </article>
+        <article class="value-card">
+          <h3>Authentic Materials</h3>
+          <p class="muted">Select materials with comfortable, everyday wear in mind.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="collection-section" id="collections">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">OUR COLLECTIONS</p>
+          <h2>All Jewelry</h2>
+        </div>
+        <div id="filterTabs" class="filter-tabs"></div>
+        <div id="productGrid" class="product-grid"></div>
+      </div>
+    </section>
+
+    <section class="help-strip">
+      <div class="container centered">
+        <h3>Have a question?</h3>
+        <p>We're here to help you find the perfect piece. Reach out to us directly on WhatsApp for personalized recommendations.</p>
+        <a id="chatWhatsappBtn" class="btn help-btn" target="_blank" rel="noreferrer">Chat on WhatsApp</a>
+      </div>
+    </section>
+  </main>
+
+  <section class="checkout-section">
+    <div class="container checkout-panel">
+      <h2>Checkout</h2>
+      <p class="muted">Fill details and place your order</p>
+      <form id="checkoutForm">
+        <div class="checkout-grid">
+          <label>Full Name <input required name="name" /></label>
+          <label>Phone Number <input required name="phone" /></label>
+          <label>Email (optional) <input name="email" /></label>
+          <label>Address Line 1 <input required name="line1" /></label>
+          <label>Address Line 2 <input name="line2" /></label>
+          <label>City <input required name="city" /></label>
+          <label>Pincode <input required name="pincode" /></label>
+        </div>
+        <div class="totals"><strong>Total: ₹<span id="checkoutTotal">0</span></strong></div>
+        <button type="submit" class="btn btn-primary">Continue to Payment</button>
+      </form>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div>
+        <span class="brand-title">RANORA</span>
+        <p class="muted">Jewelry for new beginnings. Every piece crafted to mark the moments that matter.</p>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <a href="#home">Home</a>
+        <a href="#collections">Collections</a>
+      </div>
+      <div>
+        <h4>Connect</h4>
+        <a id="footerWhatsapp" target="_blank" rel="noreferrer">Chat on WhatsApp</a>
+      </div>
+    </div>
+  </footer>
+
+  <dialog id="cartDialog">
+    <h3>Your Cart</h3>
+    <ul id="cartItems" class="cart-items"></ul>
+    <p><strong>Total: ₹<span id="cartTotal">0</span></strong></p>
+    <div class="actions">
+      <button id="cartCheckoutBtn" class="btn btn-primary">Place Order</button>
+      <button id="closeCartBtn" class="btn">Close</button>
+    </div>
+  </dialog>
+
+  <dialog id="productDialog">
+    <h3 id="productDialogTitle">Product Details</h3>
+    <img id="productMainImage" alt="Product image" class="product-main-image" />
+    <div id="productThumbs" class="product-thumbs"></div>
+    <p id="productDialogDescription"></p>
+    <p><strong>Price: ₹<span id="productDialogPrice">0</span></strong></p>
+    <div class="actions">
+      <button id="closeProductBtn" class="btn">Close</button>
+      <button id="addFromProductBtn" class="btn btn-primary">Add to Cart</button>
+    </div>
+  </dialog>
+
+  <dialog id="waPreviewDialog">
+    <h3>Order Summary & Payment</h3>
+    <textarea id="waPreviewText" rows="6" readonly style="margin-bottom: 12px;"></textarea>
+    
+    <form id="paymentForm">
+      <div class="qr-block">
+        <h3>Pay with GPay</h3>
+        <img src="assets/gpay-qr.svg" alt="GPay QR Code" />
+        <div style="margin-top: 10px;">
+          <a href="assets/gpay-qr.svg" download="ranorah-payment-qr.svg" class="btn" style="text-decoration: none; display: inline-block; font-size: 0.9em; padding: 6px 12px;">Download QR Code</a>
+        </div>
+      </div>
+      <label>Payment Reference / UTR <input required name="paymentRef" placeholder="After GPay payment" /></label>
+      <label>Payment Screenshot <input type="file" required name="paymentScreenshot" accept="image/*" /></label>
+
+      <div class="actions" style="margin-top: 12px;">
+        <button type="button" id="cancelWaBtn" class="btn">Cancel</button>
+        <button type="submit" id="confirmWaBtn" class="btn btn-primary">Confirm & Send to WhatsApp</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="script.js"></script>
+</body>
+
+</html>

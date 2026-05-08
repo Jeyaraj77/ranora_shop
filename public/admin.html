@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ranorah Admin</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .admin-wrap {
+        max-width: 1100px;
+        margin: 20px auto;
+        background: #fff;
+        border: 1px solid #eadfd4;
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .admin-grid {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 16px;
+      }
+      .hidden {
+        display: none;
+      }
+
+      .panel {
+        border: 1px solid #eadfd4;
+        border-radius: 10px;
+        padding: 12px;
+      }
+
+      .product-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .product-item {
+        border: 1px solid #eadfd4;
+        border-radius: 10px;
+        padding: 10px;
+        display: grid;
+        grid-template-columns: 80px 1fr auto;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .product-item img {
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        object-fit: cover;
+        background: #f6f6f6;
+      }
+
+      .row-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .category-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: end;
+      }
+      .category-add {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .category-add input {
+        margin-top: 0;
+      }
+      .icon-plus {
+        min-width: 40px;
+        padding: 10px;
+      }
+      .dropzone {
+        border: 2px dashed #c1ab98;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+        background: #fcf8f4;
+        margin-bottom: 10px;
+      }
+      .dropzone.active {
+        border-color: #6f4e37;
+        background: #f7efe8;
+      }
+      .preview-img {
+        width: 100%;
+        max-height: 180px;
+        object-fit: contain;
+        border-radius: 8px;
+        border: 1px solid #eadfd4;
+        margin-bottom: 10px;
+        background: #fff;
+      }
+      .image-previews {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .image-previews img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #eadfd4;
+      }
+
+      @media (max-width: 900px) {
+        .admin-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="admin-wrap">
+      <h1>Ranorah Admin</h1>
+      <div id="loginPanel" class="panel">
+        <h3>Admin Login</h3>
+        <p class="muted">Enter password to manage products.</p>
+        <label>Password <input id="adminPassword" type="password" placeholder="Enter admin password" /></label>
+        <button id="loginBtn" class="btn btn-primary">Login</button>
+      </div>
+
+      <div class="admin-grid hidden" id="adminPanel">
+        <section class="panel">
+          <h3 id="formTitle">Add Product</h3>
+          <form id="productForm">
+            <label>Product Name <input required name="name" /></label>
+            <div class="category-row">
+              <label>Category
+                <select name="category" id="categorySelect"></select>
+              </label>
+              <div class="category-add">
+                <input id="newCategoryInput" type="text" placeholder="New category" />
+                <button type="button" id="addCategoryBtn" class="btn icon-plus">+</button>
+              </div>
+            </div>
+            <label>Price (INR) <input required type="number" min="1" name="price" /></label>
+            <label>Stock <input type="number" min="0" name="inStock" value="10" /></label>
+            <label>Description <input name="description" /></label>
+           <div id="dropzone" class="dropzone">
+              Drag & Drop image here or click file picker
+            </div>
+            <label>Or Upload Image(s) <input id="imageFileInput" type="file" name="imageFile" accept="image/*" multiple /></label>
+            <div id="imagePreviews" class="image-previews hidden"></div>
+
+            <div class="row-actions">
+              <button type="submit" class="btn btn-primary">Save Product</button>
+              <button type="button" id="resetFormBtn" class="btn">Reset</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <h3>Current Products</h3>
+          <div id="productList" class="product-list"></div>
+          <div class="row-actions" style="margin-top: 12px">
+            <button id="saveAllBtn" class="btn btn-primary">Save All Changes</button>
+          </div>
+        </section>
+      </div>
+
+      <p><a href="/">Back to Store</a></p>
+    </div>
+
+    <script type="module">
+      const ADMIN_PASSWORD = "ranorah@123";
+      const API_BASE = window.API_BASE_URL ? String(window.API_BASE_URL).replace(/\/$/, "") : "";
+      const apiUrl = (path) => `${API_BASE}${path}`;
+
+      const loginPanel = document.getElementById("loginPanel");
+      const adminPanel = document.getElementById("adminPanel");
+      const adminPassword = document.getElementById("adminPassword");
+      const loginBtn = document.getElementById("loginBtn");
+      const productForm = document.getElementById("productForm");
+      const productList = document.getElementById("productList");
+      const saveAllBtn = document.getElementById("saveAllBtn");
+      const resetFormBtn = document.getElementById("resetFormBtn");
+      const formTitle = document.getElementById("formTitle");
+      const dropzone = document.getElementById("dropzone");
+      const imageFileInput = document.getElementById("imageFileInput");
+      const imagePreviews = document.getElementById("imagePreviews");
+      const categorySelect = document.getElementById("categorySelect");
+      const newCategoryInput = document.getElementById("newCategoryInput");
+      const addCategoryBtn = document.getElementById("addCategoryBtn");
+      let products = [];
+      let editingId = null;
+      let uploadedImagesData = [];
+      let categories = ["Jewellery"];
+
+      function normalizeCategory(value) {
+        return String(value || "").trim();
+      }
+
+      function syncCategoriesFromProducts() {
+        const set = new Set(["Jewellery"]);
+        products.forEach((product) => {
+          const category = normalizeCategory(product.category);
+          if (category) set.add(category);
+        });
+        categories = [...set].sort((a, b) => a.localeCompare(b));
+      }
+
+      function renderCategoryOptions(selectedValue = "Jewellery") {
+        const selected = normalizeCategory(selectedValue) || "Jewellery";
+        if (selected && !categories.includes(selected)) categories.push(selected);
+        categories = [...new Set(categories)].sort((a, b) => a.localeCompare(b));
+        categorySelect.innerHTML = categories
+          .map((category) => `<option value="${category}">${category}</option>`)
+          .join("");
+        categorySelect.value = selected;
+      }
+
+      function addNewCategoryFromInput() {
+        const value = normalizeCategory(newCategoryInput.value);
+        if (!value) {
+          alert("Enter a category name first.");
+          return;
+        }
+        if (!categories.includes(value)) categories.push(value);
+        categories = [...new Set(categories)].sort((a, b) => a.localeCompare(b));
+        renderCategoryOptions(value);
+        newCategoryInput.value = "";
+      }
+
+      async function loadProducts() {
+        try {
+          const res = await fetch(apiUrl("/api/products"));
+          if (!res.ok) throw new Error("Failed to load products");
+          products = await res.json();
+        } catch (_error) {
+          try {
+            const fallback = await fetch("data/products.json");
+            const fallbackProducts = await fallback.json();
+            products = Array.isArray(fallbackProducts) ? fallbackProducts : [];
+          } catch (_fallbackError) {
+            products = [];
+          }
+        }
+        syncCategoriesFromProducts();
+        renderCategoryOptions("Jewellery");
+        renderProducts();
+      }
+
+      function renderProducts() {
+        if (!products.length) {
+          productList.innerHTML = "<p class='muted'>No products yet.</p>";
+          return;
+        }
+        productList.innerHTML = products
+          .map(
+            (p) => `
+            <article class="product-item">
+              <img src="${p.image}" alt="${p.name}" />
+              <div>
+                <strong>${p.name}</strong><br />
+                <span class="muted">${p.category} | ₹${Number(p.price).toLocaleString("en-IN")}</span><br />
+                <small class="muted">Stock: ${p.inStock || 0}</small>
+              </div>
+              <div class="row-actions">
+                <button class="btn" onclick="editProduct('${p.id}')">Edit</button>
+                <button class="btn" onclick="deleteProduct('${p.id}')">Delete</button>
+              </div>
+            </article>`
+          )
+          .join("");
+      }
+
+      function resetForm() {
+        productForm.reset();
+        renderCategoryOptions("Jewellery");
+        productForm.inStock.value = "10";
+        editingId = null;
+        uploadedImagesData = [];
+        formTitle.textContent = "Add Product";
+        imagePreviews.classList.add("hidden");
+        imagePreviews.innerHTML = "";
+      }
+
+      function generateId() {
+        return `RN${Date.now().toString().slice(-6)}`;
+      }
+
+      function fileToDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              const MAX_WIDTH = 800;
+              const MAX_HEIGHT = 800;
+              let width = img.width;
+              let height = img.height;
+
+              if (width > height) {
+                if (width > MAX_WIDTH) {
+                  height *= MAX_WIDTH / width;
+                  width = MAX_WIDTH;
+                }
+              } else {
+                if (height > MAX_HEIGHT) {
+                  width *= MAX_HEIGHT / height;
+                  height = MAX_HEIGHT;
+                }
+              }
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext("2d");
+              ctx.drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL("image/jpeg", 0.7));
+            };
+            img.onerror = () => reject(new Error("Invalid image"));
+            img.src = e.target.result;
+          };
+          reader.onerror = () => reject(new Error("Failed to read file"));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function normalizeProductImages(product) {
+        const candidateList = [];
+
+        if (Array.isArray(product.images)) {
+          candidateList.push(...product.images);
+        } else if (typeof product.images === "string") {
+          const raw = product.images.trim();
+          if (raw.startsWith("[")) {
+            try {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) candidateList.push(...parsed);
+            } catch (_error) {
+              candidateList.push(...raw.split(","));
+            }
+          } else {
+            candidateList.push(...raw.split(","));
+          }
+        }
+
+        if (product.image) candidateList.push(product.image);
+
+        return [...new Set(candidateList.map((item) => String(item || "").trim()).filter(Boolean))];
+      }
+
+      window.editProduct = (id) => {
+        const p = products.find((item) => item.id === id);
+        if (!p) return;
+        editingId = id;
+        formTitle.textContent = "Edit Product";
+        productForm.name.value = p.name || "";
+        renderCategoryOptions(p.category || "Jewellery");
+        productForm.price.value = p.price || "";
+        productForm.inStock.value = p.inStock || 0;
+        productForm.description.value = p.description || "";
+
+        uploadedImagesData = normalizeProductImages(p);
+        renderPreviews();
+      };
+
+      function renderPreviews() {
+        if (uploadedImagesData.length === 0) {
+          imagePreviews.classList.add("hidden");
+          imagePreviews.innerHTML = "";
+          return;
+        }
+        imagePreviews.classList.remove("hidden");
+        imagePreviews.innerHTML = uploadedImagesData.map((src, i) => `
+          <div style="position:relative;">
+            <img src="${src}" alt="Preview" />
+            <button type="button" onclick="removeUploadedImage(${i})" style="position:absolute;top:0;right:0;background:red;color:white;border:none;border-radius:50%;cursor:pointer;width:20px;height:20px;line-height:20px;text-align:center;">&times;</button>
+          </div>
+        `).join("");
+      }
+
+      window.removeUploadedImage = (index) => {
+        uploadedImagesData.splice(index, 1);
+        renderPreviews();
+      };
+
+      window.deleteProduct = (id) => {
+        products = products.filter((p) => p.id !== id);
+        renderProducts();
+      };
+
+      productForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(productForm);
+
+        const finalImages = [...new Set(uploadedImagesData.map((src) => String(src || "").trim()).filter(Boolean))];
+        const image = finalImages[0];
+
+        if (!image) {
+          alert("Please upload at least one image.");
+          return;
+        }
+
+        const product = {
+          id: editingId || generateId(),
+          name: formData.get("name")?.trim(),
+          category: normalizeCategory(formData.get("category")) || "Jewellery",
+          price: Number(formData.get("price")),
+          image,
+          images: finalImages.length ? finalImages : [image],
+          description: formData.get("description")?.trim() || "",
+          inStock: Number(formData.get("inStock") || 0)
+        };
+
+        if (!product.name || !product.price) {
+          alert("Name and price are required.");
+          return;
+        }
+
+        if (editingId) {
+          products = products.map((p) => (p.id === editingId ? product : p));
+        } else {
+          products.push(product);
+        }
+        syncCategoriesFromProducts();
+        resetForm();
+        renderProducts();
+      });
+
+      saveAllBtn.addEventListener("click", async () => {
+        try {
+          const res = await fetch(apiUrl("/api/admin/products"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ products })
+          });
+          if (!res.ok) {
+            const payload = await res.json().catch(() => ({}));
+            throw new Error(payload.error || "Failed to save products");
+          }
+          alert("All product changes saved.");
+          await loadProducts();
+        } catch (error) {
+          alert(`Error: ${error.message}. If deployed on Netlify, connect an external backend API and set window.API_BASE_URL.`);
+        }
+      });
+
+      resetFormBtn.addEventListener("click", resetForm);
+      addCategoryBtn.addEventListener("click", addNewCategoryFromInput);
+      newCategoryInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          addNewCategoryFromInput();
+        }
+      });
+      loginBtn.addEventListener("click", () => {
+        if (adminPassword.value !== ADMIN_PASSWORD) {
+          alert("Invalid password.");
+          return;
+        }
+        loginPanel.classList.add("hidden");
+        adminPanel.classList.remove("hidden");
+        loadProducts();
+      });
+
+      async function handleFiles(files) {
+        for (const file of files) {
+          if (!file.type.startsWith("image/")) continue;
+          const dataUrl = await fileToDataUrl(file);
+          uploadedImagesData.push(dataUrl);
+        }
+        renderPreviews();
+      }
+
+      imageFileInput.addEventListener("change", async (e) => {
+        if (e.target.files.length > 0) {
+          await handleFiles(e.target.files);
+          e.target.value = "";
+        }
+      });
+
+      ["dragenter", "dragover"].forEach((eventName) =>
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropzone.classList.add("active");
+        })
+      );
+      ["dragleave", "drop"].forEach((eventName) =>
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropzone.classList.remove("active");
+        })
+      );
+      dropzone.addEventListener("drop", async (e) => {
+        const files = e.dataTransfer.files;
+        if (!files || files.length === 0) return;
+        await handleFiles(files);
+      });
+
+    </script>
+  </body>
+</html>
